@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import GithubCorner from "react-github-corner";
+import TextField from 'material-ui/TextField';
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import './App.css';
 
 const WUNDERGROUND_KEY = "b56f2c0800fdf6e4";
@@ -87,18 +89,32 @@ class App extends Component {
       fetch("https://ipinfo.io/json")
         .then(res => res.json())
         .then(ip => {
+            let query;
             let lang = ip.country;
             if (!SUPPORTED_LANGUAGES.includes(lang)) {
                 lang = "EN";
             }
+            lang = "EN";
             let crd = this.state.coordinates;
             crd = crd || {
                 latitude: +ip.loc.split(",")[0]
               , longitude: +ip.loc.split(",")[1]
             }
-            const query = [crd.latitude, crd.longitude].join(",");
-            const WUNDERGROUND_URL = `https://api.wunderground.com/api/${WUNDERGROUND_KEY}/forecast/lang:${lang}/q/${query}.json`;
-            return fetch(WUNDERGROUND_URL)
+            if(this.state.cityCountry)
+            {
+                var cityCountryArray = this.state.cityCountry.split(",");
+                var city = cityCountryArray[0];
+                var country = cityCountryArray[1];
+                 query = `http://api.wunderground.com/api/${WUNDERGROUND_KEY}/forecast/lang:${lang}/q/${country}/${city}.json`;
+            }
+            else
+            {
+                const qInput = [crd.latitude, crd.longitude].join(",");
+                 query = `https://api.wunderground.com/api/${WUNDERGROUND_KEY}/forecast/lang:${lang}/q/${qInput}.json`;
+            }
+            
+            
+            return fetch(query);
         })
         .then(c => c.json())
         .then(forecast => {
@@ -173,6 +189,7 @@ class App extends Component {
   }
 
   renderWeather () {
+
       if (!this.state.forecast) {
           return (
             <div className="weather-container">
@@ -182,6 +199,16 @@ class App extends Component {
       }
       return (
         <div className="weather-container">
+            <TextField
+            floatingLabelText="type in a city"
+            onChange =  {(event,value) => this.setState({cityCountry: value})}
+            onKeyPress={(ev) => {
+                ;
+                if (ev.key === 'Enter') {
+                  this.check();
+                }
+              }}
+            />
             {this.renderWeatherToday()}
             {this.renderNextDays()}
         </div>
@@ -191,16 +218,11 @@ class App extends Component {
   render() {
     return (
         <div>
-            <GithubCorner
-                href="https://github.com/IonicaBizau/react-weather-app"
-                bannerColor="#3498db"
-                octoColor="#fff"
-                width={80}
-                height={80}
-                direction="right"
-            />
+            
             <div className="app">
+            <MuiThemeProvider>
                 {this.renderWeather()}
+                </MuiThemeProvider>
             </div>
         </div>
     );
